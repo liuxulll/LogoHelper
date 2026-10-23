@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">logo助手</string>
+
+    <!-- 使用前提示 -->
+    <string name="usage_tip_title">使用建议：请先在 E听说 App 中清除缓存，再打开本工具扫描。</string>
+    <string name="usage_tip_reason">原因：E听说会把历史作业缓存残留在 resource/ 目录，未清除时可能扫描到旧作业，导致按修改时间判断的“当前作业”不准确。清除缓存后，目录里只保留你刚下载/刚打开的那份作业，识别最准。</string>
+    <string name="usage_tip_steps">· 打开 E听说 → 我的/设置 → 清除缓存；\n· 或在系统设置 → 应用 → E听说 → 存储 → 清除缓存；\n· 然后回到 E听说重新打开目标作业，确保其下载完成，再切回本工具点「刷新」。</string>
+    <string name="overlay_tip">提示：使用前请先在 E听说中清除缓存</string>
+    <string name="empty_no_homework">未找到作业缓存。请先在 E听说中打开目标作业并下载完成；若仍找不到，请清除 E听说缓存后重试。</string>
+</resources>
