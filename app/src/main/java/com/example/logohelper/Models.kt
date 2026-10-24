@@ -4,11 +4,12 @@ import java.io.Serializable
 
 /**
  * 单道题目解析结果。
- * type: "role"（对话/听力选择题）或 "picture"（思维导图转述题）
+ * category 取值："听选信息" / "回答问题" / "模仿朗读" / "题目"
  */
 data class ParsedQuestion(
     val index: Int,
-    val type: String,
+    val type: String,        // "role" 或 "picture"
+    val category: String,    // 小节名
     val questionText: String,
     val answerText: String,
     val keywords: String? = null
@@ -16,6 +17,7 @@ data class ParsedQuestion(
 
 /**
  * 一次作业（resource/ 下一个文件夹）的解析结果。
+ * questions 已按 听选信息 → 回答问题 → 模仿朗读 智能排序。
  */
 data class ParsedHomework(
     val folderName: String,
@@ -23,4 +25,12 @@ data class ParsedHomework(
     val lastModified: Long,
     val stid: String?,
     val questions: List<ParsedQuestion>
-) : Serializable
+) : Serializable {
+
+    /** 各小节题数摘要，如 "听选信息6题 · 回答问题4题 · 模仿朗读1题" */
+    val categoriesSummary: String
+        get() = if (questions.isEmpty()) "未解析出题目"
+        else questions.groupingBy { it.category }.eachCount()
+            .toList().sortedBy { EtsParser.categoryOrder(it.first) }
+            .joinToString(" · ") { "${it.first}${it.second}题" }
+}

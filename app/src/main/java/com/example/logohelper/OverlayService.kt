@@ -98,18 +98,26 @@ class OverlayService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_SHOW -> {
-                createChannel()
-                startForegroundCompat(buildNotification())
-                val homework = if (Build.VERSION.SDK_INT >= 33) {
-                    intent.getSerializableExtra(EXTRA_HOMEWORK, ParsedHomework::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getSerializableExtra(EXTRA_HOMEWORK) as? ParsedHomework
-                }
-                if (homework != null) {
-                    showOverlay(homework)
-                } else {
+                try {
+                    createChannel()
+                    startForegroundCompat(buildNotification())
+                    val homework = if (Build.VERSION.SDK_INT >= 33) {
+                        intent.getSerializableExtra(EXTRA_HOMEWORK, ParsedHomework::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getSerializableExtra(EXTRA_HOMEWORK) as? ParsedHomework
+                    }
+                    if (homework != null) {
+                        showOverlay(homework)
+                    } else {
+                        removeViews()
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+                } catch (e: Exception) {
+                    // 任一环节失败（权限被回收、视图添加失败等）都安全退出，不闪退
                     removeViews()
+                    runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
                     stopSelf()
                     return START_NOT_STICKY
                 }
@@ -261,15 +269,26 @@ class OverlayService : Service() {
                 setPadding(0, dp(8), 0, dp(8))
             })
         } else {
+            var lastCategory = ""
             homework.questions.forEachIndexed { i, q ->
+                if (q.category != lastCategory) {
+                    lastCategory = q.category
+                    contentColumn.addView(TextView(this).apply {
+                        text = "「$lastCategory」"
+                        setTextColor(Color.parseColor("#90CAF9"))
+                        setTypeface(typeface, Typeface.BOLD)
+                        setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f)
+                        setPadding(0, if (i == 0) 0 else dp(8), 0, dp(4))
+                    })
+                }
                 if (i > 0) contentColumn.addView(View(this).apply {
                     setBackgroundColor(Color.parseColor("#33FFFFFF"))
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT, 1
-                    ).apply { topMargin = dp(8); bottomMargin = dp(8) }
+                    ).apply { topMargin = dp(6); bottomMargin = dp(6) }
                 })
                 contentColumn.addView(TextView(this).apply {
-                    text = "Q${q.index + 1}  ${q.questionText}"
+                    text = "Q${i + 1}  ${q.questionText}"
                     setTextColor(Color.WHITE)
                     setTypeface(typeface, Typeface.BOLD)
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)

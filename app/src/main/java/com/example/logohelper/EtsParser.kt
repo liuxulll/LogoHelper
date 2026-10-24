@@ -6,9 +6,22 @@ import java.io.File
  * content.json 解析器。
  * 支持两种 structure_type：
  *  - collector.role    ：对话/听力选择题
- *  - collector.picture ：思维导图转述题
+ *  - collector.picture ：思维导图转述题（归入模仿朗读类，排在最后）
+ * 解析后按 听选信息 → 回答问题 → 模仿朗读 智能排序。
  */
 object EtsParser {
+
+    const val CATEGORY_LISTEN = "听选信息"
+    const val CATEGORY_ANSWER = "回答问题"
+    const val CATEGORY_READ = "模仿朗读"
+
+    /** 排序权重：听选信息 → 回答问题 → 模仿朗读，未知类别排最后 */
+    fun categoryOrder(category: String): Int = when (category) {
+        CATEGORY_LISTEN -> 0
+        CATEGORY_ANSWER -> 1
+        CATEGORY_READ -> 2
+        else -> 3
+    }
 
     /** 清理 </br>、<br>、<br/>、<p>、</p> 等 HTML 标签 */
     private fun stripTags(text: String): String {
@@ -27,15 +40,23 @@ object EtsParser {
      */
     private fun cleanQuestionText(raw: String): String {
         var text = stripTags(raw)
-        // 在 A. / B. / C. / D. 标记前插入换行（仅处理最后一个括号段中的选项）
+        // 在 A. / B. / C. / D. 标记前插入换行
         text = text.replace(Regex("""(?<=[\s(\[（])([A-D])\.\s*""")) { m ->
             "\n" + m.groupValues[1] + ". "
         }
         // 合并多余空行并去首尾空白
-        text = text.lines().map { it.trim() }.filterIndexed { i, line ->
-            !(line.isEmpty() && i > 0 && text.lines()[i - 1].isBlank())
-        }.joinToString("\n")
+        text = text.lines().map { it.trim() }
+            .filterIndexed { i, line ->
+                !(line.isEmpty() && i > 0 && text.lines()[i - 1].isBlank())
+            }.joinToString("\n")
         return text.trim()
+    }
+
+    /** 根据题目文本判断小节：含 A. B. 等两个以上选项标记 → 听选信息，否则 → 回答问题 */
+    private fun detectCategory(cleanedAsk: String): String {
+        val letters = Regex("""\b([A-D])[.]""").findAll(cleanedAsk)
+            .map { it.groupValues[1] }.distinct().toList()
+        return if (letters.size >= 2) CATEGORY_LISTEN else CATEGORY_ANSWER
     }
 
     /** std 数组取“去标签后长度最短”的一项；并列取第一个 */
@@ -54,7 +75,7 @@ object EtsParser {
     }
 
     /**
-     * 解析一个 content.json 文件，返回该作业的题目列表。
+     * 解析一个 content.json 文件，返回该作业的题目列表（已智能排序）。
      * 解析失败时抛出异常，由调用方逐文件 try-catch。
      */
     fun parse(
@@ -85,6 +106,7 @@ object EtsParser {
                         ParsedQuestion(
                             index = i,
                             type = "role",
+                            category = detectCategory(ask),
                             questionText = ask,
                             answerText = answer,
                             keywords = keywords
@@ -106,6 +128,7 @@ object EtsParser {
                         ParsedQuestion(
                             index = 0,
                             type = "picture",
+                            category = CATEGORY_READ,
                             questionText = "（思维导图转述题）\n$topic",
                             answerText = answer,
                             keywords = keypoint
@@ -119,12 +142,17 @@ object EtsParser {
             }
         }
 
+        // 智能排序：听选信息 → 回答问题 → 模仿朗读（稳定排序，同类保持原顺序）
+        val sorted = questions.sortedWith(
+            compareBy({ categoryOrder(it.category) }, { it.index })
+        )
+
         return ParsedHomework(
             folderName = folderName,
             folderPath = folderPath,
             lastModified = lastModified,
             stid = stid,
-            questions = questions
+            questions = sorted
         )
     }
 }

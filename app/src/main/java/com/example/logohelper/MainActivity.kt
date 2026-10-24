@@ -47,14 +47,17 @@ class MainActivity : ComponentActivity() {
     private var notice by mutableStateOf<String?>(null)
     private var showKeywords by mutableStateOf(false)
 
+    private var pendingOverlayHomework: ParsedHomework? = null
+
     // 运行时权限申请（Android 8-10 存储、Android 13+ 通知）
     private val storagePermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { refreshPermissions() }
 
     private val notificationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             // 无论结果如何都尝试启动悬浮窗（无通知权限时前台服务仍可运行）
-            startOverlayWithCurrentHomework()
+            pendingOverlayHomework?.let { startOverlay(it) }
+            pendingOverlayHomework = null
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,13 +98,14 @@ class MainActivity : ComponentActivity() {
                         }
                     },
                     onGrantOverlay = { PermissionHelper.requestOverlayAccess(this) },
-                    onShowOverlay = {
-                        if (!PermissionHelper.hasNotificationAccess(this) &&
-                            Build.VERSION.SDK_INT >= 33
+                    onShowOverlay = { homework ->
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            !PermissionHelper.hasNotificationAccess(this)
                         ) {
+                            pendingOverlayHomework = homework
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            startOverlayWithCurrentHomework()
+                            startOverlay(homework)
                         }
                     }
                 )
@@ -158,8 +162,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startOverlayWithCurrentHomework() {
-        val homework = homeworks.firstOrNull { it.folderPath == selectedPath } ?: return
-        OverlayService.startShow(this, homework)
+    private fun startOverlay(homework: ParsedHomework) {
+        try {
+            OverlayService.startShow(this, homework)
+        } catch (e: Exception) {
+            // 部分 ROM 对后台启动前台服务有限制，给出提示而不是闪退
+            android.widget.Toast.makeText(
+                this,
+                "悬浮窗启动失败：${e.message ?: e.javaClass.simpleName}。" +
+                        "请确认已授予悬浮窗权限，并尝试先在桌面打开本应用再操作。",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
     }
 }
