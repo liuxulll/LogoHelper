@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -82,13 +80,16 @@ fun MainScreen(
                 },
                 actions = {
                     TextButton(onClick = onRefresh) {
-                        Text("刷新", color = MaterialTheme.colorScheme.onPrimary, fontSize = 13.sp)
+                        Text(
+                            "刷新",
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontSize = 13.sp
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.height(46.dp)
+                )
             )
         }
     ) { padding ->
@@ -100,10 +101,12 @@ fun MainScreen(
             // 分屏/横屏：宽明显大于高 → 左右两栏；否则上下单栏
             val sideBySide = maxWidth > maxHeight
 
+            var tipExpanded by remember { mutableStateOf(false) }
+
             Column(Modifier.fillMaxSize()) {
-                // 紧凑提示条（默认一行，可展开）
-                var tipExpanded by remember { mutableStateOf(false) }
-                CompactTipBar(expanded = tipExpanded, onToggle = { tipExpanded = !it })
+                CompactTipBar(expanded = tipExpanded, onToggle = {
+                    tipExpanded = !tipExpanded
+                })
 
                 if (!state.storageGranted) {
                     PermissionBar(title = state.storageTitle, onGrant = onGrantStorage)
@@ -113,78 +116,77 @@ fun MainScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(horizontal = if (sideBySide) 8.dp else 10.dp)
+                        .padding(horizontal = 10.dp)
                 ) {
-                if (sideBySide) {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        Box(
-                            Modifier
+                    if (sideBySide) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
                                 .weight(1f)
-                                .fillMaxHeight()
                         ) {
-                            SectionBody(
-                                state = state,
-                                onSelectHomework = onSelectHomework,
-                                forceTab = 0,
-                                showTabRow = false
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            ) {
+                                SectionBody(
+                                    state = state,
+                                    onSelectHomework = onSelectHomework,
+                                    fixedTab = 0,
+                                    showTabRow = false
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier
+                                    .weight(1.4f)
+                                    .fillMaxHeight()
+                            ) {
+                                SectionBody(
+                                    state = state,
+                                    onSelectHomework = onSelectHomework,
+                                    fixedTab = 1,
+                                    showTabRow = false
+                                )
+                            }
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Box(
-                            Modifier
-                                .weight(1.4f)
-                                .fillMaxHeight()
-                        ) {
-                            SectionBody(
-                                state = state,
-                                onSelectHomework = onSelectHomework,
-                                forceTab = 1,
-                                showTabRow = false
-                            )
-                        }
+                    } else {
+                        SectionBody(
+                            state = state,
+                            onSelectHomework = onSelectHomework,
+                            fixedTab = null,
+                            showTabRow = true
+                        )
                     }
-                } else {
-                    SectionBody(
-                        state = state,
-                        onSelectHomework = onSelectHomework,
-                        forceTab = null,
-                        showTabRow = true
-                    )
                 }
-            }
 
-            // 底部操作条
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-                    .padding(bottom = 10.dp, top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        val hw = state.selectedHomework
-                        if (hw == null) {
-                            Toast.makeText(context, "请先选择一份作业", Toast.LENGTH_SHORT).show()
-                        } else if (hw.questions.isEmpty()) {
-                            Toast.makeText(context, "该作业没有可复制的题目", Toast.LENGTH_SHORT).show()
-                        } else {
-                            copyToClipboard(context, hw)
-                        }
-                    },
-                    enabled = state.selectedHomework != null,
-                    modifier = Modifier.weight(1f)
-                ) { Text("复制题目答案", fontSize = 13.sp) }
-                OutlinedButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.weight(0.55f)
-                ) { Text("刷新", fontSize = 13.sp) }
-            }
+                // 底部操作条
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp)
+                        .padding(top = 4.dp, bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            val hw = state.selectedHomework
+                            if (hw == null) {
+                                Toast.makeText(context, "请先选择一份作业", Toast.LENGTH_SHORT).show()
+                            } else if (hw.questions.isEmpty()) {
+                                Toast.makeText(context, "该作业没有可复制的题目", Toast.LENGTH_SHORT).show()
+                            } else {
+                                copyToClipboard(context, hw)
+                            }
+                        },
+                        enabled = state.selectedHomework != null,
+                        modifier = Modifier.weight(1f)
+                    ) { Text("复制题目答案", fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.weight(0.55f)
+                    ) { Text("刷新", fontSize = 13.sp) }
+                }
             }
         }
     }
@@ -216,7 +218,7 @@ private fun CompactTipBar(expanded: Boolean, onToggle: () -> Unit) {
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    if (expanded) "▴" else "▾",
+                    if (expanded) "▴ 收起" else "▾ 展开",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -263,73 +265,69 @@ private fun PermissionBar(title: String, onGrant: () -> Unit) {
     }
 }
 
-/** 列表 + 预览主体：单栏时带 Tab，双栏时由外部指定只渲染一侧 */
+/**
+ * 列表 + 预览主体。
+ * fixedTab：双栏模式下强制显示的一侧（0 列表 / 1 预览）；null 时由 Tab 决定。
+ */
 @Composable
 private fun SectionBody(
     state: MainUiState,
     onSelectHomework: (Int) -> Unit,
-    forceTab: Int?,
+    fixedTab: Int?,
     showTabRow: Boolean
 ) {
-    var tab by remember { mutableIntStateOf(0) }
-    val effectiveTab = forceTab ?: tab
+    // 早退分支必须放在函数顶层（lambda 内不能 return）
+    if (state.scanning) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = 2.dp)
-    ) {
+    val notice = state.notice
+    if (notice != null) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer
+            )
+        ) {
+            Text(
+                notice,
+                modifier = Modifier.padding(10.dp),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+        return
+    }
+
+    val homeworks = state.homeworks
+    if (homeworks.isEmpty()) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                "未找到作业缓存。请先在 E听说中打开目标作业并下载完成；若仍找不到，请清除 E听说缓存后重试。",
+                modifier = Modifier.padding(10.dp),
+                fontSize = 12.sp
+            )
+        }
+        return
+    }
+
+    var tab by remember { mutableIntStateOf(0) }
+    val currentTab = fixedTab ?: tab
+
+    Column(modifier = Modifier.fillMaxSize()) {
         if (showTabRow) {
-            TabRow(
-                selectedTabIndex = effectiveTab,
-                containerColor = Color.Transparent,
-                modifier = Modifier.height(40.dp)
-            ) {
-                Tab(selected = effectiveTab == 0, onClick = { tab = 0 },
+            TabRow(selectedTabIndex = currentTab, containerColor = Color.Transparent) {
+                Tab(selected = currentTab == 0, onClick = { tab = 0 },
                     text = { Text("作业列表", fontSize = 13.sp) })
-                Tab(selected = effectiveTab == 1, onClick = { tab = 1 },
+                Tab(selected = currentTab == 1, onClick = { tab = 1 },
                     text = { Text("答案预览", fontSize = 13.sp) })
             }
         }
 
-        val notice = state.notice
-        if (state.scanning) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            return
-        }
-
-        if (notice != null) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    notice,
-                    modifier = Modifier.padding(10.dp),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            )
-            return
-        }
-
-        val homeworks = state.homeworks
-        if (homeworks.isEmpty()) {
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    "未找到作业缓存。请先在 E听说中打开目标作业并下载完成；若仍找不到，请清除 E听说缓存后重试。",
-                    modifier = Modifier.padding(10.dp),
-                    fontSize = 12.sp
-                )
-            }
-            return
-        }
-
-        if (effectiveTab == 0) {
+        if (currentTab == 0) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -345,87 +343,90 @@ private fun SectionBody(
                 }
             }
         } else {
-            val selected = state.selectedHomework
-            if (selected == null) {
+            PreviewColumn(state = state, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun PreviewColumn(state: MainUiState, modifier: Modifier = Modifier) {
+    val selected = state.selectedHomework
+    if (selected == null) {
+        Text(
+            "请先在「作业列表」中选择一份作业。",
+            fontSize = 12.sp,
+            modifier = Modifier.padding(10.dp)
+        )
+        return
+    }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+    ) {
+        if (selected.questions.isEmpty()) {
+            Text(
+                "该作业未解析出题目。",
+                fontSize = 12.sp,
+                modifier = Modifier.padding(10.dp)
+            )
+        }
+        var lastCategory = ""
+        selected.questions.forEachIndexed { i, q ->
+            if (q.category != lastCategory) {
+                lastCategory = q.category
                 Text(
-                    "请先在「作业列表」中选择一份作业。",
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(10.dp)
+                    "「$lastCategory」",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
                 )
-                return
             }
-            Column(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 2.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                if (selected.questions.isEmpty()) {
+                Column(Modifier.padding(10.dp)) {
                     Text(
-                        "该作业未解析出题目。",
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(10.dp)
+                        "Q${i + 1}  ${q.questionText}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
                     )
-                }
-                var lastCategory = ""
-                selected.questions.forEachIndexed { i, q ->
-                    if (q.category != lastCategory) {
-                        lastCategory = q.category
+                    Spacer(Modifier.padding(top = 4.dp, bottom = 0.dp))
+                    Text(
+                        q.answerText,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 13.sp
+                    )
+                    if (state.showKeywords && !q.keywords.isNullOrBlank()) {
+                        Spacer(Modifier.padding(top = 3.dp, bottom = 0.dp))
                         Text(
-                            "「$lastCategory」",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
+                            "关键词：${q.keywords}",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        )
-                    ) {
-                        Column(Modifier.padding(10.dp)) {
-                            Text(
-                                "Q${i + 1}  ${q.questionText}",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                q.answerText,
-                                color = MaterialTheme.colorScheme.secondary,
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 13.sp
-                            )
-                            if (state.showKeywords && !q.keywords.isNullOrBlank()) {
-                                Spacer(Modifier.height(3.dp))
-                                Text(
-                                    "关键词：${q.keywords}",
-                                    fontSize = 10.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = state.showKeywords,
-                        onCheckedChange = { state.onToggleKeywords() },
-                        modifier = Modifier.height(32.dp)
-                    )
-                    Text("显示关键词", fontSize = 11.sp)
                 }
             }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Checkbox(
+                checked = state.showKeywords,
+                onCheckedChange = { state.onToggleKeywords() }
+            )
+            Text("显示关键词", fontSize = 11.sp)
         }
     }
 }
@@ -459,7 +460,7 @@ private fun HomeworkItem(
                 fontSize = 13.sp,
                 maxLines = 1
             )
-            Spacer(Modifier.height(2.dp))
+            Spacer(Modifier.padding(top = 2.dp, bottom = 0.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     formatTime(homework.lastModified),
