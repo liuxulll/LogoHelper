@@ -1,10 +1,8 @@
 package com.example.logohelper
 
-import java.io.Serializable
-
 /**
  * 单道题目解析结果。
- * category 取值："听选信息" / "回答问题" / "模仿朗读" / "题目"
+ * category 取值："听选信息" / "回答问题" / "模仿朗读"
  */
 data class ParsedQuestion(
     val index: Int,
@@ -13,7 +11,7 @@ data class ParsedQuestion(
     val questionText: String,
     val answerText: String,
     val keywords: String? = null
-) : Serializable
+)
 
 /**
  * 一次作业（resource/ 下一个文件夹）的解析结果。
@@ -25,7 +23,7 @@ data class ParsedHomework(
     val lastModified: Long,
     val stid: String?,
     val questions: List<ParsedQuestion>
-) : Serializable {
+) {
 
     /** 各小节题数摘要，如 "听选信息6题 · 回答问题4题 · 模仿朗读1题" */
     val categoriesSummary: String
