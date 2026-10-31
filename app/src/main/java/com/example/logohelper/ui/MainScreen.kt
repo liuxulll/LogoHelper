@@ -383,38 +383,11 @@ private fun PreviewColumn(state: MainUiState, modifier: Modifier = Modifier) {
                     modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
                 )
             }
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Column(Modifier.padding(10.dp)) {
-                    Text(
-                        "Q${i + 1}  ${q.questionText}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                    Spacer(Modifier.padding(top = 4.dp, bottom = 0.dp))
-                    Text(
-                        q.answerText,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 13.sp
-                    )
-                    if (state.showKeywords && !q.keywords.isNullOrBlank()) {
-                        Spacer(Modifier.padding(top = 3.dp, bottom = 0.dp))
-                        Text(
-                            "关键词：${q.keywords}",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
+            QuestionCard(
+                label = "Q${i + 1}",
+                question = q,
+                showKeywords = state.showKeywords
+            )
         }
         Row(
             modifier = Modifier

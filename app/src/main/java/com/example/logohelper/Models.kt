@@ -10,7 +10,8 @@ data class ParsedQuestion(
     val category: String,    // 小节名
     val questionText: String,
     val answerText: String,
-    val keywords: String? = null
+    val keywords: String? = null,
+    val alternatives: List<String> = emptyList()  // 其他可用备选答案（最多 5 条）
 )
 
 /**
